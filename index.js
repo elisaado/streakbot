@@ -41,15 +41,38 @@ Hey _${msg.from.first_name}_, welcome to Streak bot.
   bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "Markdown", reply_markup });
 });
 
-bot.onText(/^\/relapse$/, (msg) => {
-  const resp = "";
+bot.onText(/^\/relapse$/, async (msg) => {
+  let resp = "";
   const user = msg.from.id;
+  const streak = await streaks().findOne({ id: user });
 
+  if (!streak) {
+    resp = `
+Hey _${msg.from.first_name}_, welcome to Streak bot.
+    
+↪️ Use /start to start a new streak.`;
 
-  bot.sendMessage(msg.chat.id, resp, {reply_to_message_id: msg.message_id});
+    return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "Markdown" });
+  }
+
+  resp = `Are you sure you want to register a *relapse*?`;
+  const reply_markup = {
+    inline_keyboard: [[
+      {
+        text: "Yes",
+        callback_data: `relapse-${user}`
+      },
+      {
+        text: "No",
+        callback_data: `cancel-${user}`
+      }
+    ]]
+  }
+
+  bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "Markdown", reply_markup });
 });
 
-bot.on('callback_query', (query) => {
+bot.on('callback_query', async (query) => {
   const data = query.data.split('-');
   const user = query.from.id;
   const msg = query.message;
@@ -58,20 +81,47 @@ bot.on('callback_query', (query) => {
   const dataUser = Number(data[1]);
 
   if (dataUser !== user) {
-    return bot.answerCallbackQuery(query.id, {text: "🚫 This button was not meant for you"})
+    return bot.answerCallbackQuery(query.id, { text: "🚫 This button was not meant for you" })
   }
 
   switch (command) {
-    case 'start':
+    case 'start': {
       const resp = `
 I started a new streak for you.
 
 🍀 Good luck, _${query.from.first_name}_.`;
 
-      streaks().insertOne({id: user, start: (new Date).getTime()});
+      await streaks().insertOne({ id: user, start: (new Date).getTime() });
       bot.editMessageText(resp, { chat_id: msg.chat.id, message_id: msg.message_id, parse_mode: 'Markdown' })
       break;
-    
+    }
+    case 'relapse': {
+      const streak = await streaks().findOne({ id: user });
+      const days = Math.floor(daysBetween(streak.start, new Date));
+
+      await streaks().insertOne({ id: user, start: (new Date).getTime() });
+
+      const resp = `
+🗑 Sad to see your streak of *${days} days* go down the drain.
+
+
+I started a new streak for you.
+
+🍀 Good luck, _${query.from.first_name}_, you will need it.`;
+      
+      await streaks().updateOne({ id: user}, {$set: { id: user, start: (new Date).getTime() }});
+      bot.editMessageText(resp, { chat_id: msg.chat.id, message_id: msg.message_id, parse_mode: 'Markdown' })
+      break;
+    }
+    case 'cancel': {
+      await streaks().insertOne({ id: user, start: (new Date).getTime() });
+
+      const resp = `
+🆗 Cancelled.`;
+      
+      bot.editMessageText(resp, { chat_id: msg.chat.id, message_id: msg.message_id, parse_mode: 'Markdown' })
+      break;
+    }
     default:
       break;
   }
