@@ -2,17 +2,35 @@
 
 const TelegramBot = require('node-telegram-bot-api');
 
-const config = require('./config.json');
+const { daysBetween } = require('./util');
 const streaks = require('./db');
+
+const config = require('./config.json');
 
 const bot = new TelegramBot(config.token, {polling: true});
 
-bot.onText(/^\/streak$/, (msg) => {
-  const resp = "";
+bot.onText(/^\/streak$/, async (msg) => {
   const user = msg.from.id;
+  const streak = await streaks().findOne({id: user});
 
+  let resp;
+  let reply_markup;
 
-  bot.sendMessage(msg.chat.id, resp, {reply_to_message_id: msg.message_id});
+  if (streak) {
+    const days = Math.floor(daysBetween(streak.start, new Date));
+
+    resp = `
+Hey _${msg.from.first_name}_.
+
+🔥 Your streak is *${days} days* long.`;
+  } else {
+      resp = `
+Hey _${msg.from.first_name}_, welcome to Streak bot.
+
+🏁 Tap start a new streak to start a new streak.`;
+  }
+
+  bot.sendMessage(msg.chat.id, resp, {reply_to_message_id: msg.message_id, parse_mode: "Markdown", reply_markup});
 });
 
 bot.onText(/^\/relapse$/, (msg) => {
