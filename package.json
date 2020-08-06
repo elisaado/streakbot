@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/elisaado/streakbot#readme",
   "dependencies": {
+    "markdown-escape": "^1.1.0",
     "mongodb": "^3.6.0",
     "node-telegram-bot-api": "^0.50.0"
   }
