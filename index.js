@@ -4,7 +4,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const escape = require('markdown-escape');
 
 const { daysBetween } = require('./util');
-const streaks = require('./db');
+const { streaks, scoreboards } = require('./db');
 
 const config = require('./config.json');
 
@@ -112,14 +112,14 @@ I started a new streak for you\\.
 I started a new streak for you\\.
 
 🍀 Good luck, _${escape(query.from.first_name)}_, you will need it\\.`;
-      
-      await streaks().updateOne({ id: user}, {$set: { id: user, start: (new Date).getTime() }});
+
+      await streaks().updateOne({ id: user }, { $set: { id: user, start: (new Date).getTime() } });
       bot.editMessageText(resp, { chat_id: msg.chat.id, message_id: msg.message_id, parse_mode: 'MarkdownV2' })
       break;
     }
     case 'cancel': {
       const resp = `🆗 Cancelled\\.`;
-      
+
       bot.editMessageText(resp, { chat_id: msg.chat.id, message_id: msg.message_id, parse_mode: 'MarkdownV2' })
       break;
     }
