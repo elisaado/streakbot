@@ -233,7 +233,7 @@ async function generateAndSetScoreboard(scoreboard) {
   scores.sort((a,b) => b.days - a.days);
 
   let resp = '🏆 __Scoreboard__\n\n';
-  scores.forEach((score, i) => resp += `${i+1}. ${score.resp}`);
+  scores.forEach((score, i) => resp += `${i+1}\\. ${score.resp}`);
 
   return bot.editMessageText(resp, { chat_id: scoreboard.chat_id, message_id: scoreboard.message_id, parse_mode: "MarkdownV2" });
 }
