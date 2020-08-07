@@ -51,7 +51,7 @@ bot.onText(/^\/relapse(@.+bot)?$/, async (msg) => {
     resp = `
 Hey _${escape(msg.from.first_name)}_, welcome to Streak bot\\.
     
-↪️ Use /start to start a new streak\\.`;
+↪️ Use /streak to start a new streak\\.`;
 
     return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2" });
   }
@@ -73,6 +73,65 @@ Hey _${escape(msg.from.first_name)}_, welcome to Streak bot\\.
   bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2", reply_markup });
 });
 
+bot.onText(/^\/enableScoreboard(@.+bot)?$/i, async (msg) => {
+  const user = msg.from.id;
+
+  const streak = await streaks().findOne({ id: user });
+
+  let resp;
+  let reply_markup;
+
+  if (!streak) {
+    resp = `
+Hey _${escape(msg.from.first_name)}_, welcome to Streak bot\\.
+    
+↪️ Use /streak to start a new streak\\.`;
+
+    return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2" });
+  }
+
+  if (msg.chat.type === 'private') {
+    resp = `🚫 You can't enable scoreboards in private chat\\.`
+    return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2" });
+  }
+
+  reply_markup = {
+    inline_keyboard: [[
+      {
+        text: "📝 Turn this message into a scoreboard",
+        callback_data: `scoreboard-admins`
+      }
+    ]]
+  }
+
+  let scoreboard = await scoreboards().findOne({ chat_id: msg.chat.id });
+  if (!scoreboard) {
+    scoreboard = {
+      chat_id: msg.chat.id,
+      members: [
+        msg.from.id,
+      ],
+      message_id: 0,
+      enabled: false
+    }
+
+    await scoreboards().insertOne(scoreboard);
+    resp = `✅ *Created a new scoreboard for this chat\\.*`;
+    return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2", reply_markup });
+  }
+
+  if (scoreboard.members.includes(msg.from.id)) {
+    resp = `🚫 You already enabled scoreboards\\.`;
+    return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2", reply_markup });
+  }
+
+  scoreboard.members.push(msg.from.id);
+  await scoreboards().updateOne({ chat_id: msg.chat.id }, { $set: scoreboard })
+
+  resp = `✅ *You are now appearing on the scoreboard\\.*`;
+  return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2", reply_markup });
+});
+
 bot.on('callback_query', async (query) => {
   const data = query.data.split('-');
   const user = query.from.id;
@@ -81,13 +140,12 @@ bot.on('callback_query', async (query) => {
   const command = data[0];
   const dataUser = Number(data[1]);
 
-  if (dataUser !== user) {
+  if (!isNaN(dataUser) && dataUser !== user) {
     return bot.answerCallbackQuery(query.id, { text: "🚫 This button was not meant for you" })
   }
 
   let username = `@${query.from.username}`;
   if (!username) username = `[${escape(query.from.first_name)}](tg://user?id=${user})`;
-
   switch (command) {
     case 'start': {
       const resp = `
@@ -123,9 +181,48 @@ I started a new streak for you\\.
       bot.editMessageText(resp, { chat_id: msg.chat.id, message_id: msg.message_id, parse_mode: 'MarkdownV2' })
       break;
     }
+    case 'scoreboard': {
+      // check if admin
+      const member = await bot.getChatMember(msg.chat.id, user);
+      if (!['creator', 'administrator'].includes(member.status)) {
+        return bot.answerCallbackQuery(query.id, { text: "🚫 This button was not meant for you" })
+      }
+
+      const scoreboard = await scoreboards().findOne({chat_id: msg.chat.id});
+      scoreboard.message_id = msg.message_id;
+      await scoreboards().updateOne({_id: scoreboard._id}, {$set: scoreboard})
+      await generateAndSetScoreboard(scoreboard);
+
+      break;
+    }
     default:
       break;
   }
 
   bot.answerCallbackQuery(query.id, {})
 });
+
+async function generateAndSetScoreboard(scoreboard) {
+  let resp = '🏆 __Scoreboard__\n\n';
+
+  for (let i = 0; i < scoreboard.members.length; i++) {
+    const memberID = scoreboard.members[i];
+    const member = await bot.getChatMember(scoreboard.chat_id, memberID).catch(() => undefined);
+    if (!member) return;
+
+    const streak = await streaks().findOne({id: memberID});
+    const days = Math.floor(daysBetween(streak.start, new Date));
+
+    let namestring;
+
+    if (!member.user.username) {
+      namestring = `[${escape(member.user.first_name)}](tg://user?id=${memberID})`;
+    } else {
+      namestring = `${escape(member.user.first_name)} \\(@${escape(member.user.username)}\\)`;
+    }
+
+    resp += `${i+1}\\. ${namestring} — *${days} days*\n`
+  }
+
+  return bot.editMessageText(resp, { chat_id: scoreboard.chat_id, message_id: scoreboard.message_id, parse_mode: "MarkdownV2" });
+}
