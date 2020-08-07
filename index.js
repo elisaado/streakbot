@@ -81,15 +81,6 @@ bot.onText(/^\/enableScoreboard(@.+bot)?$/i, async (msg) => {
   let resp;
   let reply_markup;
 
-  if (!streak) {
-    resp = `
-Hey _${escape(msg.from.first_name)}_, welcome to Streak bot\\.
-    
-↪️ Use /streak to start a new streak\\.`;
-
-    return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2" });
-  }
-
   if (msg.chat.type === 'private') {
     resp = `🚫 You can't enable scoreboards in private chat\\.`
     return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2" });
@@ -130,6 +121,10 @@ Hey _${escape(msg.from.first_name)}_, welcome to Streak bot\\.
 
   if (scoreboard.message_id) generateAndSetScoreboard(scoreboard);
   resp = `✅ *You are now appearing on the scoreboard\\.*`;
+
+  if (!streak) {
+    resp = `⚠️ *You will appear on the scoreboard once you start a new streak using* /streak *\\.*`
+  }
   return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2", reply_markup });
 });
 
