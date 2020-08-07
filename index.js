@@ -194,6 +194,7 @@ I started a new streak for you\\.
       await scoreboards().updateOne({_id: scoreboard._id}, {$set: scoreboard})
       await generateAndSetScoreboard(scoreboard);
 
+      await bot.pinChatMessage(msg.chat.id, msg.message_id).catch(() => {});
       break;
     }
     default:
