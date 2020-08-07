@@ -228,6 +228,7 @@ async function generateAndSetScoreboard(scoreboard) {
     if (!member) return;
 
     const streak = await streaks().findOne({ id: memberID });
+    if (!streak) return;
     const days = Math.floor(daysBetween(streak.start, new Date));
 
     let namestring;
