@@ -85,8 +85,8 @@ bot.on('callback_query', async (query) => {
     return bot.answerCallbackQuery(query.id, { text: "🚫 This button was not meant for you" })
   }
 
-  let username = query.from.username;
-  if (!username) username = `[${query.from.first_name}](tg://user?id=${user})`;
+  let username = `@${query.from.username}`;
+  if (!username) username = `[${escape(query.from.first_name)}](tg://user?id=${user})`;
 
   switch (command) {
     case 'start': {
