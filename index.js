@@ -204,8 +204,7 @@ I started a new streak for you\\.
 });
 
 async function generateAndSetScoreboard(scoreboard) {
-  let resp = '🏆 __Scoreboard__\n\n';
-
+  const scores = [];
   for (let i = 0; i < scoreboard.members.length; i++) {
     const memberID = scoreboard.members[i];
     const member = await bot.getChatMember(scoreboard.chat_id, memberID).catch(() => undefined);
@@ -222,8 +221,18 @@ async function generateAndSetScoreboard(scoreboard) {
       namestring = `${escape(member.user.first_name)} \\(@${escape(member.user.username)}\\)`;
     }
 
-    resp += `${i+1}\\. ${namestring} — *${days} days*\n`
+    const score = {
+      days,
+      resp: `${namestring} — *${days} days*\n`
+    }
+
+    scores.push(score);
   }
+  
+  scores.sort((a,b) => a.days - b.days);
+
+  let resp = '🏆 __Scoreboard__\n\n';
+  scores.forEach(score => resp += score.resp);
 
   return bot.editMessageText(resp, { chat_id: scoreboard.chat_id, message_id: scoreboard.message_id, parse_mode: "MarkdownV2" });
 }
