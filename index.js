@@ -133,6 +133,22 @@ Hey _${escape(msg.from.first_name)}_, welcome to Streak bot\\.
   return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2", reply_markup });
 });
 
+bot.onText(/^\/setStreak(@.+bot)? (.+)$/i, async (msg, match) => {
+  match = Number(match.pop());
+  if (match < 0 || match > 3650) return;
+  const start = new Date - match * (24*60*60*1000);
+
+  let streak = await streaks().findOne({id: msg.from.id});
+  if (!streak) {
+    await streaks().insertOne({ id: msg.from.id, start });
+  } else {
+    await streaks().updateOne({_id: streak._id}, {$set: {start}}).then(refreshScoreboards);
+  }
+
+  const resp = `✅ I set your streak to *${match} days*\\.`;
+  return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2" });
+});
+
 bot.on('callback_query', async (query) => {
   const data = query.data.split('-');
   const user = query.from.id;
@@ -235,12 +251,13 @@ async function generateAndSetScoreboard(scoreboard) {
   let resp = '🏆 __Scoreboard__\n\n';
   scores.forEach((score, i) => resp += `${i + 1}\\. ${score.resp}`);
 
-  resp += "\n📝 *Use* /enableScoreboard *to appear on the scoreboard.*"
+  resp += "\n📝 *Use* /enableScoreboard *to appear on the scoreboard\\.*"
   return bot.editMessageText(resp, { chat_id: scoreboard.chat_id, message_id: scoreboard.message_id, parse_mode: "MarkdownV2" });
 }
 
-function refreshScoreboards() {
-  scoreboards().find().toArray().forEach(scoreboard => {
+async function refreshScoreboards() {
+  let scoreboardsCursor = await scoreboards().find().toArray();
+  scoreboardsCursor.forEach(scoreboard => {
     if (!scoreboard.message_id) return;
     return generateAndSetScoreboard(scoreboard);
   });
