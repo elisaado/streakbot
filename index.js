@@ -128,6 +128,7 @@ Hey _${escape(msg.from.first_name)}_, welcome to Streak bot\\.
   scoreboard.members.push(msg.from.id);
   await scoreboards().updateOne({ chat_id: msg.chat.id }, { $set: scoreboard })
 
+  if (scoreboard.message_id) generateAndSetScoreboard(scoreboard);
   resp = `✅ *You are now appearing on the scoreboard\\.*`;
   return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2", reply_markup });
 });
