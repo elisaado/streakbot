@@ -235,6 +235,7 @@ async function generateAndSetScoreboard(scoreboard) {
   let resp = '🏆 __Scoreboard__\n\n';
   scores.forEach((score, i) => resp += `${i + 1}\\. ${score.resp}`);
 
+  resp += "\n📝 *Use* /enableScoreboard *to appear on the scoreboard.*"
   return bot.editMessageText(resp, { chat_id: scoreboard.chat_id, message_id: scoreboard.message_id, parse_mode: "MarkdownV2" });
 }
 
