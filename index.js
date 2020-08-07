@@ -189,12 +189,12 @@ I started a new streak for you\\.
         return bot.answerCallbackQuery(query.id, { text: "🚫 This button was not meant for you" })
       }
 
-      const scoreboard = await scoreboards().findOne({chat_id: msg.chat.id});
+      const scoreboard = await scoreboards().findOne({ chat_id: msg.chat.id });
       scoreboard.message_id = msg.message_id;
-      await scoreboards().updateOne({_id: scoreboard._id}, {$set: scoreboard})
+      await scoreboards().updateOne({ _id: scoreboard._id }, { $set: scoreboard })
       await generateAndSetScoreboard(scoreboard);
 
-      await bot.pinChatMessage(msg.chat.id, msg.message_id).catch(() => {});
+      await bot.pinChatMessage(msg.chat.id, msg.message_id, { disable_notification: true }).catch(() => { });
       break;
     }
     default:
@@ -211,7 +211,7 @@ async function generateAndSetScoreboard(scoreboard) {
     const member = await bot.getChatMember(scoreboard.chat_id, memberID).catch(() => undefined);
     if (!member) return;
 
-    const streak = await streaks().findOne({id: memberID});
+    const streak = await streaks().findOne({ id: memberID });
     const days = Math.floor(daysBetween(streak.start, new Date));
 
     let namestring;
@@ -229,11 +229,11 @@ async function generateAndSetScoreboard(scoreboard) {
 
     scores.push(score);
   }
-  
-  scores.sort((a,b) => b.days - a.days);
+
+  scores.sort((a, b) => b.days - a.days);
 
   let resp = '🏆 __Scoreboard__\n\n';
-  scores.forEach((score, i) => resp += `${i+1}\\. ${score.resp}`);
+  scores.forEach((score, i) => resp += `${i + 1}\\. ${score.resp}`);
 
   return bot.editMessageText(resp, { chat_id: scoreboard.chat_id, message_id: scoreboard.message_id, parse_mode: "MarkdownV2" });
 }
