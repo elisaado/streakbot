@@ -226,3 +226,13 @@ async function generateAndSetScoreboard(scoreboard) {
 
   return bot.editMessageText(resp, { chat_id: scoreboard.chat_id, message_id: scoreboard.message_id, parse_mode: "MarkdownV2" });
 }
+
+function refreshScoreboards() {
+  scoreboards().find().toArray().forEach(scoreboard => {
+    if (!scoreboard.message_id) return;
+    return generateAndSetScoreboard(scoreboard);
+  });
+}
+
+// every hour
+setInterval(refreshScoreboards, 60 * 60 * 1000);
