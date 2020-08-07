@@ -133,7 +133,7 @@ Hey _${escape(msg.from.first_name)}_, welcome to Streak bot\\.
   return bot.sendMessage(msg.chat.id, resp, { reply_to_message_id: msg.message_id, parse_mode: "MarkdownV2", reply_markup });
 });
 
-bot.onText(/^\/setStreak(@.+bot)? (.+)$/i, async (msg, match) => {
+bot.onText(/^\/setStreak(@.+bot)? ([0-9]+)$/i, async (msg, match) => {
   match = Number(match.pop());
   if (match < 0 || match > 3650) return;
   const start = new Date - match * (24*60*60*1000);
