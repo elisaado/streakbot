@@ -225,10 +225,10 @@ async function generateAndSetScoreboard(scoreboard) {
   for (let i = 0; i < scoreboard.members.length; i++) {
     const memberID = scoreboard.members[i];
     const member = await bot.getChatMember(scoreboard.chat_id, memberID).catch(() => undefined);
-    if (!member) return;
-
+    if (!member) continue;
     const streak = await streaks().findOne({ id: memberID });
-    if (!streak) return;
+    if (!streak) continue;
+
     const days = Math.floor(daysBetween(streak.start, new Date));
 
     let namestring;
